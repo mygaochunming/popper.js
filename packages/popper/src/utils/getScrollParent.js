@@ -11,7 +11,7 @@ import getParentNode from './getParentNode';
 export default function getScrollParent(element) {
   // Return body, `getScroll` will take care to get the correct `scrollTop` from it
   if (!element) {
-    return window.document.body
+    return document.body
   }
 
   switch (element.nodeName) {
@@ -24,7 +24,7 @@ export default function getScrollParent(element) {
 
   // Firefox want us to check `-x` and `-y` variations as well
   const { overflow, overflowX, overflowY } = getStyleComputedProperty(element);
-  if (/(auto|scroll)/.test(overflow + overflowY + overflowX)) {
+  if (/(auto|scroll|overlay)/.test(overflow + overflowY + overflowX)) {
     return element;
   }
 

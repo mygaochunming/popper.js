@@ -12,7 +12,7 @@ function createReference() {
   reference.style.width = '100px';
   reference.style.height = '100px';
   reference.style.margin = '100px';
-  reference.innerText = 'reference';
+  reference.textContent = 'reference';
   jasmineWrapper.appendChild(reference);
 }
 
@@ -112,6 +112,27 @@ describe('[tooltip.js]', () => {
         done();
       });
     });
+
+    it('should dispose tooltip despite never being shown', done => {
+      instance = new Tooltip(reference, {
+        title: 'foobar',
+      });
+
+      instance.dispose();
+
+      then(() => {
+        expect(document.querySelector('.tooltip')).toBeNull();
+      });
+
+      then(() => {
+        reference.dispatchEvent(new CustomEvent('mouseenter'));
+      });
+
+      then(() => {
+        expect(document.querySelector('.tooltip')).toBeNull();
+        done();
+      });
+    });
   });
 
   describe('container', () => {
@@ -191,7 +212,7 @@ describe('[tooltip.js]', () => {
 
     it('should use a DOM node as tooltip content', done => {
       const content = document.createElement('div');
-      content.innerText = 'foobar';
+      content.textContent = 'foobar';
       instance = new Tooltip(reference, {
         title: content,
         html: true,
@@ -203,6 +224,26 @@ describe('[tooltip.js]', () => {
         expect(
           document.querySelector('.tooltip .tooltip-inner').innerHTML
         ).toBe('<div>foobar</div>');
+        done();
+      });
+    });
+
+    it('should use a document fragment as tooltip content', done => {
+      const content = document.createDocumentFragment();
+      const inner = document.createElement('div');
+      inner.textContent = 'test';
+      content.appendChild(inner);
+      instance = new Tooltip(reference, {
+        title: content,
+        html: true,
+      });
+
+      instance.show();
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip .tooltip-inner').innerHTML
+        ).toBe('<div>test</div>');
         done();
       });
     });
@@ -241,6 +282,65 @@ describe('[tooltip.js]', () => {
         );
         done();
       });
+    });
+
+    it('should update title content with String', done => {
+      const updatedContent = 'Updated string';
+      instance = new Tooltip(reference, {
+        title: 'Constructor message',
+      });
+
+      instance.show();
+
+      instance.updateTitleContent(updatedContent);
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip .tooltip-inner').textContent
+        ).toBe(updatedContent);
+        done();
+      })
+    });
+
+    it('should update title content with HTMLElement', done => {
+      const updatedContent = 'Updated with div element';
+      const el = document.createElement('div');
+      el.textContent = updatedContent;
+      instance = new Tooltip(reference, {
+        title: 'Constructor message',
+        html: true, 
+      });
+
+      instance.show();
+
+      instance.updateTitleContent(el);
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip-inner').innerHTML
+        ).toBe(el.outerHTML);
+        done();
+      })
+    });
+
+    it('should update the tooltip position when changing the title', done => {
+      const updatedContent = 'Updated string with a different length';
+      instance = new Tooltip(reference, {
+        title: 'Constructor message',
+      });
+
+      instance.show();
+
+      const oldPosition = document.querySelector('.tooltip .tooltip-inner').getBoundingClientRect().left
+
+      instance.updateTitleContent(updatedContent);
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip .tooltip-inner').getBoundingClientRect().left
+        ).not.toBe(oldPosition);
+        done();
+      })
     });
   });
 
@@ -355,6 +455,24 @@ describe('[tooltip.js]', () => {
       });
     });
 
+    it('should not show tooltip if mouse leaves reference before tooltip is shown', done => {
+      instance = new Tooltip(reference, {
+        title: 'foobar',
+        trigger: 'hover',
+        delay: { show: 1000, hide: 0 },
+      });
+
+      expect(document.querySelector('.tooltip')).toBeNull();
+
+      reference.dispatchEvent(new CustomEvent('mouseenter'));
+      reference.dispatchEvent(new CustomEvent('mouseleave'));
+
+      then(() => {
+        expect(document.querySelector('.tooltip')).toBeNull();
+        done();
+      });
+    });
+
     it('should hide a tooltip on click while open', done => {
       instance = new Tooltip(reference, {
         title: 'foobar',
@@ -369,6 +487,21 @@ describe('[tooltip.js]', () => {
         expect(document.querySelector('.tooltip').style.display).toBe('none');
         done();
       });
+    });
+  });
+
+  describe('options', () => {
+    beforeEach(() => {
+      createReference();
+    });
+
+    it('should proxy the `options.offset` value to the Popper.js instance', done => {
+      instance = new Tooltip(reference, {
+        title: 'test',
+        offset: 10,
+      }).show();
+      expect(instance._popperOptions.modifiers.offset.offset).toBe(10);
+      done();
     });
   });
 });
